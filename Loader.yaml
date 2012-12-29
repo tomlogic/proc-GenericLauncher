@@ -1,0 +1,42 @@
+# Configuration file for the generic GameLaucncher for P-ROC
+
+# Customize this file to your own needs --note that if your game 
+# is pre-fliptronic (i.e., as a flipper relay) then you need to
+# specify a flipperEnable coil in your machine_config_file so 
+# the launcher can enable your flippers for game selection.  
+#
+# The launcher uses switches:
+#     - flipperLwR
+#     - flipperLwL
+#     - startButton
+#   to navigate the game list.
+# 
+# most options should be obvious.
+# Note that games that run via Python require a gamefile and gamepath
+# whereas pinmame ROMs (Williams/FreeWPC) should have a ROM specified
+# ROMs should be placed in the pinmame path.
+##################################################################### 
+machine_config_file: T2.yaml
+instructions_line_1: 'Choose game with flippers'
+instructions_line_2: 'then press start to select'
+pinmame:
+    path: 'C:\P-ROC\pinmame\'
+    cmd: pinmamep.exe
+    extra_args: '-window -skip_disclaimer -skip_gameinfo'
+python:
+    cmdpath: 'c:\Python26\python.exe'
+games:
+    - line1: 'TERMINATOR 2 v.5'
+      line2: '(using pyProcGame)'
+      gamefile: ExampleGame.py
+      gamepath: 'C:\P-ROC\games\t2\'
+    - line1: 'TERMINATOR 2 v.0'
+      line2: '(using pyProcgame)'
+      gamefile: ExampleGame.py
+      gamepath: 'C:\P-ROC\games\t2-v0\'
+    - line1: 'Williams ROM ver 8.0'
+      line2: '(using Pinmame)'
+      ROM: 'T2_L8'
+    - line1: 'Williams ROM ver 8.2 '
+      line2: '(using Pinmame)'
+      ROM: 'T2_L82'
