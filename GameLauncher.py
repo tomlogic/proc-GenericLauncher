@@ -187,7 +187,7 @@ class Loader(game.Mode):
         self.game.proc = self.game.create_pinproc()
         self.game.proc.reset(1)
         self.game.load_config(self.game.yamlpath)
-        self.game.enable_flippers(True)
+        self.game.enable_flippers(False)
         self.game.dmd.frame_handlers.append(self.game.proc.dmd_draw)
         self.game.dmd.frame_handlers.append(self.game.set_last_frame)
 
@@ -230,7 +230,7 @@ class Game(game.BasicGame):
         self.modes.add(self.loader)
 
         # Make sure flippers are off, especially for user initiated resets.
-        self.enable_flippers(enable=True)
+        self.enable_flippers(enable=False)
 
 def main():
     # actually load the Loader.yaml file
