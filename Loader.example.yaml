@@ -1,4 +1,5 @@
-# Configuration file for the generic GameLaucncher for P-ROC
+# Sample configuration file for the generic GameLaucncher for P-ROC
+# Rename to Loader.yaml and modify for your particular configuration
 
 # Customize this file to your own needs --note that if your game 
 # is pre-fliptronic (i.e., as a flipper relay) then you need to
@@ -24,6 +25,7 @@ pinmame:
     cmd: pinmamep.exe
     extra_args: '-window -skip_disclaimer -skip_gameinfo'
 python:
+#    cmdpath: '/usr/bin/python'
     cmdpath: 'c:\Python26\python.exe'
 games:
     - line1: 'TERMINATOR 2 v.5'
