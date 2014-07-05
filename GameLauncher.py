@@ -190,7 +190,6 @@ class Loader(game.Mode):
         self.game.enable_flippers(True)
         self.game.dmd.frame_handlers.append(self.game.proc.dmd_draw)
         self.game.dmd.frame_handlers.append(self.game.set_last_frame)
-        self.game.run_loop()
 
 #########################################
 ## 
@@ -253,7 +252,8 @@ def main():
         game = Game(machine_type)
         game.yamlpath = machine_config_file
         game.setup()
-        game.run_loop()
+        while 1:
+            game.run_loop()
     finally:
         del game
 
