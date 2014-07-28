@@ -255,6 +255,8 @@ def main():
         game.yamlpath = machine_config_file
         game.setup()
         while 1:
+            if game.lamps.has_key('startButton'):
+                game.lamps.startButton.schedule(schedule=0xff00ff00, cycle_seconds=0, now=False)
             game.run_loop()
     finally:
         del game
