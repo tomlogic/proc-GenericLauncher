@@ -187,7 +187,9 @@ class Loader(game.Mode):
         self.game.proc = self.game.create_pinproc()
         self.game.proc.reset(1)
         self.game.load_config(self.game.yamlpath)
-        self.game.enable_flippers(False)
+        # On Sys11 games (with flipperEnable coil), we need to enable the
+        # flippers to detect button presses via the coil EOS switches.
+        self.game.enable_flippers(self.game.coils.has_key('flipperEnable'))
         self.game.dmd.frame_handlers.append(self.game.proc.dmd_draw)
         self.game.dmd.frame_handlers.append(self.game.set_last_frame)
 
