@@ -73,7 +73,7 @@ class Loader(game.Mode):
     def reset(self):
         self.text1a_layer = dmd.TextLayer(64, 1, font_named("04B-03-7px.dmd"), "center", opaque=False).set_text(self.instructions_line_1)
         self.text1b_layer = dmd.TextLayer(64, 9, font_named("04B-03-7px.dmd"), "center", opaque=False).set_text(self.instructions_line_2)
-        self.text2_layer = dmd.TextLayer(64, 18, font_named("04B-03-7px.dmd"), "center", opaque=False)
+        self.text2_layer = dmd.TextLayer(64, 17, font_named("04B-03-7px.dmd"), "center", opaque=False)
         self.text3_layer = dmd.TextLayer(64, 25, font_named("04B-03-7px.dmd"), "center", opaque=False)
         self.layer = dmd.GroupedLayer(128, 32, [self.text3_layer,self.text2_layer, self.text1a_layer, self.text1b_layer])#set clear time
 
