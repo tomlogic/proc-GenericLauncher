@@ -131,10 +131,6 @@ class Loader(game.Mode):
         # - Interupted by flipper buttons + start button combo
         # - died
 
-        # Reset mode & restart P-ROC / pyprocgame
-        self.mode_started()
-        self.restart_proc()
-
 
     def get_class( self, kls, path_adj='/.' ):
         """Returns a class for the given fully qualified class name, *kls*.
@@ -171,10 +167,6 @@ class Loader(game.Mode):
         
         # game exited so
         del game
-
-        # Reset mode & restart P-ROC / pyprocgame
-        self.mode_started()
-        self.restart_proc()
 
 
     def stop_proc(self):
@@ -258,6 +250,9 @@ def main():
             if game.lamps.has_key('startButton'):
                 game.lamps.startButton.schedule(schedule=0xff00ff00, cycle_seconds=0, now=False)
             game.run_loop()
+            # Reset mode & restart P-ROC / pyprocgame
+            game.loader.mode_started()
+            game.loader.restart_proc()
     finally:
         del game
 
