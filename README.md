@@ -16,3 +16,8 @@ a given configuration, it makes use of the configuration's NVRAM file.
 
 This version of the launcher has not been tested on Windows.  It should work
 after updating Loader.yaml to use Windows paths.
+
+Discussion of this project takes place in [this topic][1] on the
+PinballControllers Forum.
+
+[1]: http://www.pinballcontrollers.com/forum/index.php?topic=1277.0
