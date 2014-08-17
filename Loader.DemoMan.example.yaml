@@ -1,0 +1,112 @@
+# Configuration file for the generic GameLaucncher for P-ROC
+
+# Customize this file to your own needs --note that if your game 
+# is pre-fliptronic (i.e., as a flipper relay) then you need to
+# specify a flipperEnable coil in your machine_config_file so 
+# the launcher can enable your flippers for game selection.  
+#
+# The launcher uses switches:
+#     - flipperLwR
+#     - flipperLwL
+#     - startButton
+#   to navigate the game list.
+# 
+# most options should be obvious.
+# Note that games that run via Python require a gamefile and gamepath
+# whereas pinmame ROMs (Williams/FreeWPC) should have a ROM specified
+# ROMs should be placed in the pinmame path.
+#####################################################################
+
+# Path to YAML file describing the machine.  Used by GameLauncher to
+# identify the flipperLwR, flipperLwL and startButton switches, and the
+# startButton lamp (if it exists).
+machine_config_file: '/home/user/dm2.yaml'
+
+# Title and instructions to display when launcher starts
+title: 'Demolition Man'
+instructions_line_1: 'Choose game with flippers'
+instructions_line_2: 'then press START to select.'
+
+# Configuration for PinMAME-based games
+pinmame:
+    path: '/home/user/Downloads/pinbox-toolkit'
+    cmd: './runpinmame'
+    
+    # Location of NVRAM files used to store high scores and settings
+    # for a given PinMAME ROM.  Also used to support multiple game
+    # configurations by having multiple .nv files.  Note that it should
+    # end with a path separator ('/' on Linux, '\' on Windows).
+    nvram: '/home/user/.xpinmame/nvram/'
+
+# Configuration for Python-based games
+python:
+    cmdpath: '/usr/bin/python'
+
+# A list of games to run on this cabinet.  Typically includes one or more
+# PinMAME ROMs for the original "stock" firmware, along with Python-based
+# games built with pyprocgame.
+games:
+    -
+      # Description for first two lines of DMD page for this game choice.
+      # GameLauncher shows the configuration description (see below) as line
+      # three, and the current Grand Champion score for that configuration.
+      line1: 'Demolition Man'
+      line2: '(WMS, production LX4 ROM)'
+      
+      # ROM version to use for this game choice
+      ROM: 'dm_lx4'
+      
+      # Details of where the Grand Champion score is stored in the PinMAME
+      # NVRAM file.  This is at a fixed location for any given ROM version.
+      # Used to display the current GC on line 4 of the DMD page for a game
+      # choice.
+      gc:
+        # offset of three-character player initials
+        initials: 0x1C87
+        
+        # offset to the Grand Champion score
+        score: 0x1C8A
+        
+        # number of BCD-encoded bytes used for the score
+        bcd_bytes: 6
+      
+      # GameLauncher supports use of multiple NVRAM files to allow for
+      # launching a ROM with different configurations.  If a game doesn't
+      # have a 'configuration' section, GameLauncher will just display
+      # "default configuration" and not do any .nv file copying.
+      configuration:
+        -
+          # Name of the .nv file to copy to <ROM>.nv before launching
+          # PinMAME, and then to copy back to when PinMAME exits.
+          filename: 'dm_lx4-3ball'
+          
+          # Description to show on line 3 of the DMD page for this game choice.
+          description: '3-ball w/extra balls'
+          
+        - filename: 'dm_lx4-5ball'
+          description: '5-ball w/extra balls'
+        - filename: 'dm_lx4-tourney'
+          description: '3-ball, tournament'
+          
+    - line1: 'Demolition Man'
+      line2: '(WMS, swearing/H6 ROM)'
+      ROM: 'dm_h6'
+      gc:
+        initials: 0x1CAF
+        score: 0x1CB2
+        bcd_bytes: 6
+      configuration:
+        - filename: 'dm_h6-3ball'
+          description: '3-ball w/extra balls'
+        - filename: 'dm_h6-5ball'
+          description: '5-ball w/extra balls'
+        - filename: 'dm_h6-tourney'
+          description: '3-ball, tournament'
+          
+    - line1: 'Demolition Time'
+      line2: '(by James Cardona, v0.99)'
+      ROM: 'dm_dt099'
+      gc:
+        initials: 0x195E
+        score: 0x1959
+        bcd_bytes: 5

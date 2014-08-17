@@ -18,11 +18,13 @@
 # ROMs should be placed in the pinmame path.
 ##################################################################### 
 machine_config_file: T2.yaml
+title: 'Terminator 2'
 instructions_line_1: 'Choose game with flippers'
-instructions_line_2: 'then press start to select'
+instructions_line_2: 'then press START to select.'
 pinmame:
     path: 'C:\P-ROC\pinmame\'
-    cmd: pinmamep.exe
+    nvram: 'C:\P-ROC\pinmame\nvram\'
+    cmd: 'pinmamep.exe'
     extra_args: '-window -skip_disclaimer -skip_gameinfo'
 python:
 #    cmdpath: '/usr/bin/python'

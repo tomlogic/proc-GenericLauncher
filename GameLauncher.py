@@ -28,11 +28,10 @@
 from procgame import *
 from procgame.dmd import font_named
 import os
+import shutil
 import sys
 import locale
 import yaml
-
-sys.path.append(sys.path[0]+'/../..') # Set the path so we can find procgame.  We are assuming (stupidly?) that the first member is our directory.
 
 # Loader specific file is required; and expected to live in the same
 # directory.  Gross to load it globally?  Sure.
@@ -49,21 +48,27 @@ class Loader(game.Mode):
         super(Loader, self).__init__(game, priority)
 
         global loaderconfig
-        self.selection=0 # number of selected game (indexed from 0)
+        self.game_index = 0 # number of selected game (indexed from 0)
+        self.config_index = 0    # number of selected game's configuration
+        self.configs = None
+        self.selected_config = None
+        self.selected_game = None
         
         # pull out some config values that we know we'll need up
         # front.  Should any of these fail, it's OK to fail loudly
+        self.title = loaderconfig['title']
         self.instructions_line_1 = loaderconfig['instructions_line_1']
         self.instructions_line_2 = loaderconfig['instructions_line_2']
         
         self.games = loaderconfig['games']
         self.pinmame_path =  loaderconfig['pinmame']['path']
         self.pinmame_cmd = loaderconfig['pinmame']['cmd']
+        self.pinmame_nvram = loaderconfig['pinmame']['nvram']
         self.python_path =  loaderconfig['python']['cmdpath']
 
         # extra args for pinmame are totally optional
         self.pinmame_extra_args = ""
-        if(loaderconfig['pinmame'].has_key('extra_args')):
+        if loaderconfig['pinmame'].has_key('extra_args'):
             self.extra_args = loaderconfig['pinmame']['extra_args']
 
         # print(self.games)
@@ -71,37 +76,142 @@ class Loader(game.Mode):
         self.reset()
 
     def reset(self):
-        self.text1a_layer = dmd.TextLayer(64, 1, font_named("04B-03-7px.dmd"), "center", opaque=False).set_text(self.instructions_line_1)
-        self.text1b_layer = dmd.TextLayer(64, 9, font_named("04B-03-7px.dmd"), "center", opaque=False).set_text(self.instructions_line_2)
-        self.text2_layer = dmd.TextLayer(64, 17, font_named("04B-03-7px.dmd"), "center", opaque=False)
-        self.text3_layer = dmd.TextLayer(64, 25, font_named("04B-03-7px.dmd"), "center", opaque=False)
-        self.layer = dmd.GroupedLayer(128, 32, [self.text3_layer,self.text2_layer, self.text1a_layer, self.text1b_layer])#set clear time
+        # big fonts aren't working, but I'll fix that later
+        self.title_layer = dmd.TextLayer(64, 1, font_named('04B-03-7px.dmd'), "center", opaque=False)
+        font = font_named("04B-03-7px.dmd")
+        self.text1_layer = dmd.TextLayer(64, 1, font, "center", opaque=False)
+        self.text2_layer = dmd.TextLayer(64, 9, font, "center", opaque=False)
+        self.text3_layer = dmd.TextLayer(64, 17, font, "center", opaque=False)
+        self.text4_layer = dmd.TextLayer(64, 25, font, "center", opaque=False)
+        self.layer = dmd.GroupedLayer(128, 32, [self.text4_layer, self.text3_layer,
+            self.text2_layer, self.text1_layer, self.title_layer])
 
     def mode_started(self):
-        self.show_next_game()
+        self.show_title()
 
     def mode_tick(self):
         pass
 
-    def show_next_game(self,direction=0):            
-        self.selection+=direction
-        # use the modulus operator to wrap-around selection
-        self.selection = self.selection % len(self.games)
+    # Return a string with the Grand Champion initials and score for the
+    # selected configuration of the selected game.
+    def load_gc(self):
+        gc = ''  # default to not show anything
+        if self.selected_game.has_key('gc'):
+            if self.selected_config.has_key('filename'):
+                basename = self.selected_config['filename']
+            else:
+                basename = self.selected_game['ROM']
+            
+            # load the contents of the NVRAM file into a binary array
+            nvfile = open(self.pinmame_nvram + basename + '.nv', 'rb')
+            nvram = nvfile.read(32768)
+            nvfile.close()
+            
+            initials = ''
+            # read three characters with the champ's initials from the NVRAM
+            if self.selected_game['gc'].has_key('initials'):
+                offset = self.selected_game['gc']['initials']
+                initials = ' ' + nvram[offset:offset + 3]
+                gc = 'GC:' + initials      # show initials even if we don't know the score
+            
+            if self.selected_game['gc'].has_key('score'):
+                score = 0
+                offset = self.selected_game['gc']['score']
+                if self.selected_game['gc'].has_key('bcd_bytes'):
+                    # convert the BCD-encoded bytes to an integer
+                    for b in nvram[offset:offset + self.selected_game['gc']['bcd_bytes']]:
+                        score = score * 100 + 10 * (ord(b) >> 4) + (ord(b) & 0x0F)
+                gc = 'GC:' + initials + ' {:,}'.format(score)
+            
+        return gc
         
-        self.text2_layer.set_text(self.games[self.selection]['line1'],blink_frames=20)
-        self.text3_layer.set_text(self.games[self.selection]['line2'])
+    def show_title(self):
+        self.title_layer.set_text(self.title)
+        self.text1_layer.set_text('')
+        self.text2_layer.set_text('')
+        self.text3_layer.set_text(self.instructions_line_1)
+        self.text4_layer.set_text(self.instructions_line_2)
+        self.selected_game = None
+        
+    def show_next_game(self,direction=0):
+        if self.selected_game is None:
+            # from title, go to either 0 (first) or -1 (last) game/config
+            self.game_index = self.config_index = 0 if direction > 0 else -1
+            if self.game.lamps.has_key('startButton'):
+                self.game.lamps.startButton.schedule(schedule=0xff00ff00, cycle_seconds=0, now=False)
+        else:
+            self.config_index += direction
+        
+            # If the user goes "left" of the first config, roll to the last
+            # config of the previous game
+            if self.config_index == -1:
+                self.game_index -= 1
+                # note that we need to load the configs for this new game_index
+                # before we can set config_index to the last configuration
+                
+            # If we have gone past the last config, roll over to the first
+            # configuration of the next game.
+            elif self.config_index == len(self.configs):
+                self.game_index += 1
+                self.config_index = 0
+        
+        # use the modulus operator to wrap-around game_index
+        self.game_index = self.game_index % len(self.games)
+        
+        self.selected_game = self.games[self.game_index]
+        if self.selected_game.has_key('configuration'):
+            self.configs = self.selected_game['configuration']
+        else:
+            self.configs = [{'description': 'default configuration'}]
+        
+        if self.config_index == -1:
+            # We can now select the last configuration of the newly-selected game.
+            self.config_index = len(self.configs) - 1
+        
+        self.selected_config = self.configs[self.config_index]
+        
+        # Update the DMD screen to describe the current game/config option.
+        self.title_layer.set_text('')
+        self.text1_layer.set_text(self.selected_game['line1'])
+        self.text2_layer.set_text(self.selected_game['line2'])
+        self.text3_layer.set_text(self.selected_config['description'])
+        self.text4_layer.set_text(self.load_gc())
 
     def sw_startButton_active(self, sw):
         global loaderconfig
-        if(self.games[self.selection].has_key('ROM')):
-            # print('game is ROM')
-            args = self.games[self.selection]['ROM'] + \
-                " -p-roc "+loaderconfig['machine_config_file']+" "+self.pinmame_extra_args
+        
+        # Ignore start button if we're on the title/startup screen.
+        if self.selected_game is None:
+            return
+            
+        if self.selected_game.has_key('ROM'):
+            # args for launching PinMAME directly
+            args = self.selected_game['ROM'] + " -p-roc " \
+                + loaderconfig['machine_config_file'] + " " + self.pinmame_extra_args
+                
+            # args for launching PinMAME via a shell script (runpinmame) or batch file
+#            args = self.selected_game['ROM'] + " " + loaderconfig['machine_config_file']
+            
+            pinmame_nvfile = self.pinmame_nvram + self.selected_game['ROM'] + '.nv'
+            config_nvfile = None
+            if self.selected_config.has_key('filename'):
+                config_nvfile = self.pinmame_nvram + self.selected_config['filename'] + '.nv'
+                if os.path.isfile(config_nvfile):
+                    # copy configuration's nvram file to PinMAME's version of the file 
+                    print 'Copying ' + config_nvfile + ' to ' + pinmame_nvfile
+                    shutil.copyfile(config_nvfile, pinmame_nvfile)
+                        
+            # actually run PinMAME
             self.launch_ext(self.pinmame_cmd, args, self.pinmame_path)
-        else:           
-            # print('game is Python')
-            self.launch_ext(self.python_path,self.games[self.selection]['gamefile'],self.games[self.selection]['gamepath'])
-            # self.launch_python(self.games[self.selection]['gamefile'],self.games[self.selection]['gamepath'])
+                
+            # upon return, copy the modified nvram file back (if necessary)
+            if config_nvfile is not None:
+                # copy PinMAME's version of the file back to the configuration's file
+                print 'Copying ' + pinmame_nvfile + ' back to ' + config_nvfile
+                shutil.copyfile(pinmame_nvfile, config_nvfile)
+        else:
+            self.launch_ext(self.python_path,self.selected_game['gamefile'],self.selected_game['gamepath'])
+            # self.launch_python(self.selected_game['gamefile'],self.selected_game['gamepath'])
 
     def sw_flipperLwL_active(self, sw):
         self.show_next_game(direction=-1)
@@ -112,7 +222,7 @@ class Loader(game.Mode):
     def launch_ext(self, cmd, args, path):
         """
         launch a either a pinmame based game or a PyProc-based game by 
-        running the executable and corresponding arguments. In the classes
+        running the executable and corresponding arguments. In the case
         of Python-based games, this /could/ be done by launching the game class,
         but for my needs, I want to be able to run multiple games
         that are different, but have the same module names (e.g., many
@@ -210,7 +320,7 @@ class Game(game.BasicGame):
             flipper enable relay (G08)
         """
         super(game.BasicGame, self).enable_flippers(enable)
-        if(self.coils.has_key('flipperEnable')):
+        if self.coils.has_key('flipperEnable'):
             if enable:
                 self.coils.flipperEnable.pulse(0)
             else:
@@ -247,8 +357,6 @@ def main():
         game.yamlpath = machine_config_file
         game.setup()
         while 1:
-            if game.lamps.has_key('startButton'):
-                game.lamps.startButton.schedule(schedule=0xff00ff00, cycle_seconds=0, now=False)
             game.run_loop()
             # Reset mode & restart P-ROC / pyprocgame
             game.loader.mode_started()
