@@ -76,8 +76,7 @@ class Loader(game.Mode):
         self.reset()
 
     def reset(self):
-        # big fonts aren't working, but I'll fix that later
-        self.title_layer = dmd.TextLayer(64, 1, font_named('04B-03-7px.dmd'), "center", opaque=False)
+        self.title_layer = dmd.TextLayer(64, 1, font_named('Font_CC_12px_az.dmd'), "center", opaque=False)
         font = font_named("04B-03-7px.dmd")
         self.text1_layer = dmd.TextLayer(64, 1, font, "center", opaque=False)
         self.text2_layer = dmd.TextLayer(64, 9, font, "center", opaque=False)
