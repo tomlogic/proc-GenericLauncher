@@ -38,6 +38,17 @@ import yaml
 loader_config_path = 'Loader.yaml'
 loaderconfig = None
 
+def format_score(number):
+	if sys.version_info >= (2,7,0):
+		return '{0:,}'.format(number)
+	
+	s = '%d' % number
+	groups = []
+	while s and s[-1].isdigit():
+		groups.append(s[-3:])
+		s = s[:-3]
+	return s + ','.join(reversed(groups))
+
 class Loader(game.Mode):
     """
     A Mode derived class to actually deal with prompting for a player's
@@ -102,25 +113,29 @@ class Loader(game.Mode):
                 basename = self.selected_game['ROM']
             
             # load the contents of the NVRAM file into a binary array
-            nvfile = open(self.pinmame_nvram + basename + '.nv', 'rb')
-            nvram = nvfile.read(32768)
-            nvfile.close()
-            
-            initials = ''
-            # read three characters with the champ's initials from the NVRAM
-            if self.selected_game['gc'].has_key('initials'):
-                offset = self.selected_game['gc']['initials']
-                initials = ' ' + nvram[offset:offset + 3]
-                gc = 'GC:' + initials      # show initials even if we don't know the score
-            
-            if self.selected_game['gc'].has_key('score'):
-                score = 0
-                offset = self.selected_game['gc']['score']
-                if self.selected_game['gc'].has_key('bcd_bytes'):
-                    # convert the BCD-encoded bytes to an integer
-                    for b in nvram[offset:offset + self.selected_game['gc']['bcd_bytes']]:
-                        score = score * 100 + 10 * (ord(b) >> 4) + (ord(b) & 0x0F)
-                gc = 'GC:' + initials + ' {:,}'.format(score)
+            try:
+                nvfile = open(self.pinmame_nvram + basename + '.nv', 'rb')
+                nvram = nvfile.read(32768)
+                nvfile.close()
+                
+                initials = ''
+                # read three characters with the champ's initials from the NVRAM
+                if self.selected_game['gc'].has_key('initials'):
+                    offset = self.selected_game['gc']['initials']
+                    initials = ' ' + nvram[offset:offset + 3]
+                    gc = 'GC:' + initials      # show initials even if we don't know the score
+                
+                if self.selected_game['gc'].has_key('score'):
+                    score = 0
+                    offset = self.selected_game['gc']['score']
+                    if self.selected_game['gc'].has_key('bcd_bytes'):
+                        # convert the BCD-encoded bytes to an integer
+                        for b in nvram[offset:offset + self.selected_game['gc']['bcd_bytes']]:
+                            score = score * 100 + 10 * (ord(b) >> 4) + (ord(b) & 0x0F)
+                gc = 'GC:' + initials + ' ' + format_score(score)
+            except Exception as e:
+                print "Unexpected error reading nvram:", e
+                pass
             
         return gc
         
