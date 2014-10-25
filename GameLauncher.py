@@ -80,7 +80,7 @@ class Loader(game.Mode):
         # extra args for pinmame are totally optional
         self.pinmame_extra_args = ""
         if loaderconfig['pinmame'].has_key('extra_args'):
-            self.extra_args = loaderconfig['pinmame']['extra_args']
+            self.pinmame_extra_args = loaderconfig['pinmame']['extra_args']
 
         # print(self.games)
 
