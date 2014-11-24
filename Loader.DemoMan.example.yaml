@@ -47,6 +47,25 @@ python:
 # games built with pyprocgame.
 games:
     -
+      # Description for first two lines of DMD page for this Python-based game.
+      line1: 'Custom Demolition Man'
+      line2: '(work in progress)'
+      
+      # Game directory and Python file to launch for this custom game
+      gamepath: '/home/user/cdm/'
+      gamefile: 'cdm.py /home/user/dm2.yaml'
+      
+      # Details of where the Grand Champion score is stored in a YAML file
+      # used by the game.  Use dot notation to specify the location of initials
+      # and score.
+      # Used to display the current GC on line 4 of the DMD page for a game
+      # choice.
+      gc:
+        yaml: 'config/game_data.yaml'
+        initials: 'ClassicHighScoreData.0.inits'
+        score: 'ClassicHighScoreData.0.score'
+      
+    -
       # Description for first two lines of DMD page for this game choice.
       # GameLauncher shows the configuration description (see below) as line
       # three, and the current Grand Champion score for that configuration.

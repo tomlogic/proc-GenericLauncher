@@ -49,6 +49,18 @@ def format_score(number):
 		s = s[:-3]
 	return s + ','.join(reversed(groups))
 
+def getnested(node, key):
+	""" Helper function to access a deep element of a dict/list using dot notation. """
+	keys = key.split('.')
+	try:
+		for key in keys:
+			if isinstance(node, list):
+				key = int(key)
+			node = node[key]
+		return node
+	except TypeError:
+		pass
+
 class Loader(game.Mode):
     """
     A Mode derived class to actually deal with prompting for a player's
@@ -107,35 +119,47 @@ class Loader(game.Mode):
     def load_gc(self):
         gc = ''  # default to not show anything
         if self.selected_game.has_key('gc'):
-            if self.selected_config.has_key('filename'):
-                basename = self.selected_config['filename']
+            gcdict = self.selected_game['gc']
+            if gcdict.has_key('yaml'):
+                try:
+                    yamlfile = open(self.selected_game['gamepath'] + gcdict['yaml'],'r')
+                    scores = yaml.load(yamlfile)
+                    initials = getnested(scores, gcdict['initials'])
+                    score = int(getnested(scores, gcdict['score']))
+                    gc = 'GC: ' + initials + ' ' + format_score(score)
+                except Exception:
+                    # ignore exceptions (like when nvram file doesn't exist yet)
+                    pass
             else:
-                basename = self.selected_game['ROM']
-            
-            # load the contents of the NVRAM file into a binary array
-            try:
-                nvfile = open(self.pinmame_nvram + basename + '.nv', 'rb')
-                nvram = nvfile.read(32768)
-                nvfile.close()
+                if self.selected_config.has_key('filename'):
+                    basename = self.selected_config['filename']
+                else:
+                    basename = self.selected_game['ROM']
                 
-                initials = ''
-                # read three characters with the champ's initials from the NVRAM
-                if self.selected_game['gc'].has_key('initials'):
-                    offset = self.selected_game['gc']['initials']
-                    initials = ' ' + nvram[offset:offset + 3]
-                    gc = 'GC:' + initials      # show initials even if we don't know the score
-                
-                if self.selected_game['gc'].has_key('score'):
-                    score = 0
-                    offset = self.selected_game['gc']['score']
-                    if self.selected_game['gc'].has_key('bcd_bytes'):
-                        # convert the BCD-encoded bytes to an integer
-                        for b in nvram[offset:offset + self.selected_game['gc']['bcd_bytes']]:
-                            score = score * 100 + 10 * (ord(b) >> 4) + (ord(b) & 0x0F)
-                gc = 'GC:' + initials + ' ' + format_score(score)
-            except Exception as e:
-                print "Unexpected error reading nvram:", e
-                pass
+                # load the contents of the NVRAM file into a binary array
+                try:
+                    nvfile = open(self.pinmame_nvram + basename + '.nv', 'rb')
+                    nvram = nvfile.read(32768)
+                    nvfile.close()
+                    
+                    initials = ''
+                    # read three characters with the champ's initials from the NVRAM
+                    if gcdict.has_key('initials'):
+                        offset = gcdict['initials']
+                        initials = ' ' + nvram[offset:offset + 3]
+                        gc = 'GC:' + initials      # show initials even if we don't know the score
+                    
+                    if gcdict.has_key('score'):
+                        score = 0
+                        offset = gcdict['score']
+                        if gcdict.has_key('bcd_bytes'):
+                            # convert the BCD-encoded bytes to an integer
+                            for b in nvram[offset:offset + gcdict['bcd_bytes']]:
+                                score = score * 100 + 10 * (ord(b) >> 4) + (ord(b) & 0x0F)
+                    gc = 'GC:' + initials + ' ' + format_score(score)
+                except Exception:
+                    # ignore exceptions (like when nvram file doesn't exist yet)
+                    pass
             
         return gc
         
