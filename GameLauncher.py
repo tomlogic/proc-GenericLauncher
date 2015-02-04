@@ -327,9 +327,7 @@ class Loader(game.Mode):
         self.game.proc = self.game.create_pinproc()
         self.game.proc.reset(1)
         self.game.load_config(self.game.yamlpath)
-        # On Sys11 games (with flipperEnable coil), we need to enable the
-        # flippers to detect button presses via the coil EOS switches.
-        self.game.enable_flippers(self.game.coils.has_key('flipperEnable'))
+        self.game.enable_flippers(False)
         self.game.dmd.frame_handlers.append(self.game.proc.dmd_draw)
         self.game.dmd.frame_handlers.append(self.game.set_last_frame)
 
@@ -357,12 +355,9 @@ class Game(game.BasicGame):
             presence of a coil with name flipperEnable which is mapped to the 
             flipper enable relay (G08)
         """
-        super(game.BasicGame, self).enable_flippers(enable)
         if self.coils.has_key('flipperEnable'):
-            if enable:
-                self.coils.flipperEnable.pulse(0)
-            else:
-                self.coils.flipperEnable.disable()
+            enable = True
+        super(game.BasicGame, self).enable_flippers(enable)
 
     def reset(self):
         # Reset the entire game framework
@@ -371,8 +366,8 @@ class Game(game.BasicGame):
         # Add the basic modes to the mode queue
         self.modes.add(self.loader)
 
-        # Make sure flippers are off, especially for user initiated resets.
-        self.enable_flippers(enable=False)
+        # Make sure flippers are off
+        self.enable_flippers(False)
 
 def main():
     # actually load the Loader.yaml file
