@@ -357,6 +357,7 @@ class Game(game.BasicGame):
         """
         if self.coils.has_key('flipperEnable'):
             enable = True
+            self.coils.flipperEnable.pulse(0)
         super(game.BasicGame, self).enable_flippers(enable)
 
     def reset(self):
