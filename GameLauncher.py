@@ -123,9 +123,15 @@ class Loader(game.Mode):
         gc = ''  # default to not show anything
         if self.selected_game.has_key('gc'):
             gcdict = self.selected_game['gc']
-            if gcdict.has_key('yaml'):
+            score_file = None
+            if self.selected_config.has_key('fileprefix'):
+                score_file = self.selected_game['gamepath'] + self.selected_config['fileprefix'] \
+                    + '-scores.yaml'
+            elif self.selected_game.has_key('scores'):
+                score_file = self.selected_game['gamepath'] + self.selected_game['scores']
+            if score_file is not None:
                 try:
-                    yamlfile = open(self.selected_game['gamepath'] + gcdict['yaml'],'r')
+                    yamlfile = open(score_file, 'r')
                     scores = yaml.load(yamlfile)
                     initials = getnested(scores, gcdict['initials'])
                     score = int(getnested(scores, gcdict['score']))
@@ -277,8 +283,51 @@ class Loader(game.Mode):
                 print 'Copying ' + pinmame_nvfile + ' back to ' + config_nvfile
                 shutil.copyfile(pinmame_nvfile, config_nvfile)
         else:
+            config_settings = None
+            config_scores = None
+            settings_yaml = None
+            scores_yaml = None
+            
+            # copy configuration's settings and scores YAML files to the game's path
+            try:
+                settings_yaml = self.selected_game['gamepath'] + self.selected_game['settings']
+                config_settings = self.selected_game['gamepath'] + self.selected_config['fileprefix'] \
+                    + '-settings.yaml'
+                if os.path.isfile(config_settings):
+                    print 'Copying ' + config_settings + ' to ' + settings_yaml
+                    shutil.copyfile(config_settings, settings_yaml)
+            except Exception as detail:
+                # ignore exceptions (like when there aren't files to copy)
+                print "failed to copy config settings: ", detail
+            try:
+                scores_yaml = self.selected_game['gamepath'] + self.selected_game['scores']
+                config_scores = self.selected_game['gamepath'] + self.selected_config['fileprefix'] \
+                    + '-scores.yaml'
+                if os.path.isfile(config_scores):
+                    print 'Copying ' + config_scores + ' to ' + scores_yaml
+                    shutil.copyfile(config_scores, scores_yaml)
+            except Exception as detail:
+                # ignore exceptions (like when there aren't files to copy)
+                print "failed to copy config scores: ", detail
+            
             self.launch_ext(self.python_path,self.selected_game['gamefile'],self.selected_game['gamepath'])
             # self.launch_python(self.selected_game['gamefile'],self.selected_game['gamepath'])
+                
+            # upon return, copy the modified settings and scores files back (if necessary)
+            try:
+                if config_settings is not None and settings_yaml is not None:
+                    print 'Copying ' + settings_yaml + ' back to ' + config_settings
+                    shutil.copyfile(settings_yaml, config_settings)
+            except Exception as detail:
+                # ignore exceptions (like when there aren't files to copy)
+                print "failed to save config settings: ", detail
+            try:
+                if config_scores is not None and scores_yaml is not None:
+                    print 'Copying ' + scores_yaml + ' back to ' + config_scores
+                    shutil.copyfile(scores_yaml, config_scores)
+            except Exception as detail:
+                # ignore exceptions (like when there aren't files to copy)
+                print "failed to save config scores: ", detail
 
     def sw_flipperLwL_active(self, sw):
         self.show_next_game(direction=-1)

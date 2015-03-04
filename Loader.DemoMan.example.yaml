@@ -52,6 +52,8 @@ python:
 games:
     -
       # Description for first two lines of DMD page for this Python-based game.
+      # GameLauncher shows the configuration description (see below) as line
+      # three, and the current Grand Champion score for that configuration.
       line1: 'Custom Demolition Man'
       line2: '(work in progress)'
       
@@ -59,15 +61,41 @@ games:
       gamepath: '/home/user/cdm/'
       gamefile: 'cdm.py /home/user/dm2.yaml'
       
+      scores: 'config/game_data.yaml'
+      # optional settings file, if stored separately from high scores
+      settings: 'config/user_settings.yaml'
+      
       # Details of where the Grand Champion score is stored in a YAML file
       # used by the game.  Use dot notation to specify the location of initials
-      # and score.
+      # and score.  Uses {gamepath}{fileprefix}-scores.yaml for a given
+      # configuration (see below) or {gamepath}{scores} if there isn't a
+      # "configuration" section in this file.
+      #
       # Used to display the current GC on line 4 of the DMD page for a game
       # choice.
       gc:
-        yaml: 'config/game_data.yaml'
         initials: 'ClassicHighScoreData.0.inits'
         score: 'ClassicHighScoreData.0.score'
+      
+      # GameLauncher supports use of multiple YAML files to allow for
+      # launching a game with different configurations.  If a game doesn't
+      # have a 'configuration' section, GameLauncher will just display
+      # "default configuration" and not do any file copying.
+      #
+      # Copies {gamepath}{fileprefix}-settings.yaml -> {gamepath}{settings}
+      #    and {gamepath}{fileprefix}-scores.yaml -> {gamepath}{scores}
+      # before launching the game, and then copies the files back upon return.
+      configuration:
+        -
+          # prefix for settings and scores YAML files, stored in {gamepath}
+          fileprefix: '3ball'
+          # Description to show on line 3 of the DMD page for this game choice.
+          description: '3-ball w/extra balls'
+        
+        - fileprefix: '5ball'
+          description: '5-ball w/extra balls'
+        - fileprefix: 'tourney'
+          description: '3-ball, tournament'
       
     -
       # Description for first two lines of DMD page for this game choice.
