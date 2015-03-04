@@ -5,9 +5,11 @@
 #   to define games to launch pinmame (Williams, FreeWPC), procgame 
 #   or PyProcGame games
 #
-# Michael Ocean (mocean)
-# Based on the F-14 Loader by Mark (Snux) which was based on
-# Original code from Jim (myPinballs) and Koen (DutchPinball)
+# Authors:
+#   Tom Collins (tomlogic)
+#   Michael Ocean (mocean)
+#   Based on the F-14 Loader by Mark (Snux) which was based on
+#   Original code from Jim (myPinballs) and Koen (DutchPinball)
 #
 # This is intended to be a one-size-fits-all launcher; in theory all
 #   you need to supply is a Loader.yaml and this launcher will work.  
