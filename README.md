@@ -14,9 +14,6 @@ The launcher can also read the Grand Champion initials and score from the
 NVRAM file to display with the rest of the game description.  When launching
 a given configuration, it makes use of the configuration's NVRAM file.
 
-This version of the launcher has not been tested on Windows.  It should work
-after updating Loader.yaml to use Windows paths.
-
 Discussion of this project takes place in [this topic][1] on the
 PinballControllers Forum.
 
