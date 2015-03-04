@@ -27,6 +27,10 @@ title: 'Demolition Man'
 instructions_line_1: 'Choose game with flippers'
 instructions_line_2: 'then press START to select.'
 
+# General Illumination strings to light, and optional lampshow
+gi_enable: ['gi01', 'gi02', 'gi03', 'gi04', 'gi05']
+lampshow: '/home/user/launcher.lampshow'
+
 # Configuration for PinMAME-based games
 pinmame:
     path: '/home/user/Downloads/pinbox-toolkit'

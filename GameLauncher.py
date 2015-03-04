@@ -110,6 +110,7 @@ class Loader(game.Mode):
 
     def mode_started(self):
         self.show_title()
+        self.delay(name='gi_dim', event_type=None, delay=1.0, handler=self.gi_dim)
 
     def mode_tick(self):
         pass
@@ -171,7 +172,33 @@ class Loader(game.Mode):
         self.text4_layer.set_text(self.instructions_line_2)
         self.selected_game = None
         
+    def gi_enable(self, dim=False):
+        global loaderconfig
+        
+        if loaderconfig.has_key('gi_enable'):
+            for lamp in loaderconfig['gi_enable']:
+                if dim:
+                    self.game.lamps[lamp].patter(on_time=1, off_time=2)
+                else:
+                    self.game.lamps[lamp].enable()
+                    
+        if loaderconfig.has_key('lampshow'):
+            if dim:
+                self.game.lampctrl.stop_show()
+            else:
+                if not self.game.lampctrl.show_playing:
+                    self.game.lampctrl.register_show('lampshow', loaderconfig['lampshow'])
+                    self.game.lampctrl.play_show('lampshow', repeat=True)
+            
+        if not dim:
+            self.cancel_delayed('gi_dim')
+            self.delay(name='gi_dim', event_type=None, delay=60.0, handler=self.gi_dim)
+        
+    def gi_dim(self):
+        self.gi_enable(dim=True)
+        
     def show_next_game(self,direction=0):
+        self.gi_enable(dim=False)
         if self.selected_game is None:
             # from title, go to either 0 (first) or -1 (last) game/config
             self.game_index = self.config_index = 0 if direction > 0 else -1
@@ -266,6 +293,8 @@ class Loader(game.Mode):
         that are different, but have the same module names (e.g., many
         games will have a BaseGameMode but that mode will be different)
         """
+        self.cancel_delayed('gi_dim')
+        self.game.lampctrl.stop_show()
         self.stop_proc()
 
         os.chdir(path); 
@@ -339,6 +368,7 @@ class Game(game.BasicGame):
     """ the 'game' portion of the Loader """
     def __init__(self, machine_type):
         super(Game, self).__init__(machine_type)
+        self.lampctrl = lamps.LampController(self)
 
     def setup(self):
         """docstring for setup"""
