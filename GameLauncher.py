@@ -101,12 +101,13 @@ class Loader(game.Mode):
         self.reset()
 
     def reset(self):
-        self.title_layer = dmd.TextLayer(64, 1, font_named('Font_CC_12px_az.dmd'), "center", opaque=False)
+        # if changing this font, adjust the row as necessary to avoid clipping top of title
+        self.title_layer = dmd.TextLayer(64, -2, font_named('Font_CC_12px_az.dmd'), "center", opaque=False)
         font = font_named("04B-03-7px.dmd")
-        self.text1_layer = dmd.TextLayer(64, 1, font, "center", opaque=False)
-        self.text2_layer = dmd.TextLayer(64, 9, font, "center", opaque=False)
-        self.text3_layer = dmd.TextLayer(64, 17, font, "center", opaque=False)
-        self.text4_layer = dmd.TextLayer(64, 25, font, "center", opaque=False)
+        self.text1_layer = dmd.TextLayer(64, 0, font, "center", opaque=False)
+        self.text2_layer = dmd.TextLayer(64, 8, font, "center", opaque=False)
+        self.text3_layer = dmd.TextLayer(64, 16, font, "center", opaque=False)
+        self.text4_layer = dmd.TextLayer(64, 24, font, "center", opaque=False)
         self.layer = dmd.GroupedLayer(128, 32, [self.text4_layer, self.text3_layer,
             self.text2_layer, self.text1_layer, self.title_layer])
 
