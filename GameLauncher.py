@@ -260,11 +260,14 @@ class Loader(game.Mode):
             
         if self.selected_game.has_key('ROM'):
             # args for launching PinMAME directly
+            machine_config = loaderconfig['machine_config_file']
+            if self.selected_game.has_key('machine_config_file'):
+                machine_config = self.selected_game['machine_config_file']
             args = self.selected_game['ROM'] + " -p-roc " \
-                + loaderconfig['machine_config_file'] + " " + self.pinmame_extra_args
+                + machine_config + " " + self.pinmame_extra_args
                 
             # args for launching PinMAME via a shell script (runpinmame) or batch file
-#            args = self.selected_game['ROM'] + " " + loaderconfig['machine_config_file']
+#            args = self.selected_game['ROM'] + " " + machine_config
             
             pinmame_nvfile = self.pinmame_nvram + self.selected_game['ROM'] + '.nv'
             config_nvfile = None
