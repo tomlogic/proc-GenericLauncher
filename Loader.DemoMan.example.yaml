@@ -110,7 +110,8 @@ games:
       # Details of where the Grand Champion score is stored in the PinMAME
       # NVRAM file.  This is at a fixed location for any given ROM version.
       # Used to display the current GC on line 4 of the DMD page for a game
-      # choice.
+      # choice (optional method instead of using nv_json setting and
+      # ParseNVRAM from py-pinmame-nvmaps)
       gc:
         # offset of three-character player initials
         initials: 0x1C87
@@ -120,6 +121,9 @@ games:
         
         # number of BCD-encoded bytes used for the score
         bcd_bytes: 6
+
+      # file describing how scores are stored in the nvram file, overrides 'gc'
+      nv_json: 'py-pinmame-nvmaps/maps/dm_lx4.nv.json'
       
       # GameLauncher supports use of multiple NVRAM files to allow for
       # launching a ROM with different configurations.  If a game doesn't
@@ -146,6 +150,7 @@ games:
         initials: 0x1CAF
         score: 0x1CB2
         bcd_bytes: 6
+      nv_json: 'py-pinmame-nvmaps/maps/dm_h6.nv.json'
       configuration:
         - filename: 'dm_h6-3ball'
           description: '3-ball w/extra balls'
