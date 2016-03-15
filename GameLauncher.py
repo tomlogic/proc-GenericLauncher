@@ -35,6 +35,10 @@ import sys
 import locale
 import yaml
 
+# use py-pinmame-nvram project to extract high scores from PinMAME .nv files
+sys.path.append('py-pinmame-nvmaps')
+from nvram_parser import ParseNVRAM
+
 # Loader specific file is required; and expected to live in the same
 # directory.  Gross to load it globally?  Sure.
 loader_config_path = 'Loader.yaml'
@@ -118,67 +122,67 @@ class Loader(game.Mode):
     def mode_tick(self):
         pass
 
+    def nvram_path(self):
+        if self.selected_config.has_key('filename'):
+            basename = self.selected_config['filename']
+        else:
+            basename = self.selected_game['ROM']
+        return self.pinmame_nvram + basename + '.nv'
+    
     # Return a string with the Grand Champion initials and score for the
     # selected configuration of the selected game.
     def load_gc(self):
-        gc = ''  # default to not show anything
-        if self.selected_game.has_key('gc'):
-            gcdict = self.selected_game['gc']
-            score_file = None
-            if self.selected_config.has_key('fileprefix'):
-                score_file = self.selected_game['gamepath'] + self.selected_config['fileprefix'] \
-                    + '-scores.yaml'
-            elif self.selected_game.has_key('scores'):
-                score_file = self.selected_game['gamepath'] + self.selected_game['scores']
-            if score_file is not None:
-                try:
-                    yamlfile = open(score_file, 'r')
-                    scores = yaml.load(yamlfile)
-                    initials = getnested(scores, gcdict['initials'])
-                    score = int(getnested(scores, gcdict['score']))
-                    gc = 'GC: ' + initials + ' ' + format_score(score)
-                except Exception:
-                    # ignore exceptions (like when nvram file doesn't exist yet)
-                    pass
-            else:
-                if self.selected_config.has_key('filename'):
-                    basename = self.selected_config['filename']
-                else:
-                    basename = self.selected_game['ROM']
-                
-                # load the contents of the NVRAM file into a binary array
-                try:
-                    nvfile = open(self.pinmame_nvram + basename + '.nv', 'rb')
-                    nvram = nvfile.read(32768)
-                    nvfile.close()
-                    
-                    initials = ''
-                    # read three characters with the champ's initials from the NVRAM
-                    if gcdict.has_key('initials'):
-                        offset = gcdict['initials']
-                        initials = ' ' + nvram[offset:offset + 3]
-                        gc = 'GC:' + initials      # show initials even if we don't know the score
-                    
-                    if gcdict.has_key('score'):
-                        score = 0
-                        offset = gcdict['score']
-                        if gcdict.has_key('bcd_bytes'):
-                            # convert the BCD-encoded bytes to an integer
-                            for b in nvram[offset:offset + gcdict['bcd_bytes']]:
-                                score = score * 100 + 10 * (ord(b) >> 4) + (ord(b) & 0x0F)
-                    gc = 'GC:' + initials + ' ' + format_score(score)
-                except Exception:
-                    # ignore exceptions (like when nvram file doesn't exist yet)
-                    pass
-            
-        return gc
+        scores = []
+        score_file = None
+        if self.selected_config.has_key('fileprefix'):
+            score_file = self.selected_game['gamepath'] + self.selected_config['fileprefix'] \
+                + '-scores.yaml'
+        elif self.selected_game.has_key('scores'):
+            score_file = self.selected_game['gamepath'] + self.selected_game['scores']
+        if score_file is not None:
+            try:
+                gcdict = self.selected_game['gc']
+                yamlfile = open(score_file, 'r')
+                scores_yaml = yaml.load(yamlfile)
+                yamlfile.close()
+                initials = getnested(scores_yaml, gcdict['initials'])
+                score = int(getnested(scores_yaml, gcdict['score']))
+                scores.append('GC: ' + initials + ' ' + format_score(score))
+            except Exception:
+                # ignore exceptions (like when nvram file doesn't exist yet)
+                pass
+        else:
+            p = ParseNVRAM(None, None);
+            p.load_nvram(self.nvram_path())
+            if self.selected_game.has_key('nv_json'):
+                p.load_json(self.selected_game['nv_json']);
+                scores = p.high_scores(short_labels = True)
+                if p.nv_json.has_key('mode_champions'):
+                    scores.extend(p.high_scores(section = 'mode_champions',
+                        short_labels = True))
+                lp = p.last_played()
+                if lp is not None:
+                    scores.append("Last played: " + lp)
+            elif self.selected_game.has_key('gc'):
+                gcdict = self.selected_game['gc']
+                score = 'GC:'
+                if gcdict.has_key('initials'):
+                    score += ' ' + p.format(
+                        {'encoding': 'ch', 'start': gcdict['initials'],
+                        'length': 3})
+                if gcdict.has_key('score') and gcdict.has_key('bcd_bytes'):
+                    score += ' ' + p.format(
+                        {'encoding': 'bcd', 'start': gcdict['score'],
+                        'length': gcdict['bcd_bytes']})
+                scores = [score]
+        return scores
         
     def show_title(self):
         self.title_layer.set_text(self.title)
-        self.text1_layer.set_text('')
-        self.text2_layer.set_text('')
         self.text3_layer.set_text(self.instructions_line_1)
         self.text4_layer.set_text(self.instructions_line_2)
+        self.layer = dmd.GroupedLayer(128, 32, [self.text4_layer, self.text3_layer,
+            self.title_layer])
         self.selected_game = None
         
     def gi_enable(self, dim=False):
@@ -245,11 +249,20 @@ class Loader(game.Mode):
         self.selected_config = self.configs[self.config_index]
         
         # Update the DMD screen to describe the current game/config option.
-        self.title_layer.set_text('')
         self.text1_layer.set_text(self.selected_game['line1'])
         self.text2_layer.set_text(self.selected_game['line2'])
         self.text3_layer.set_text(self.selected_config['description'])
-        self.text4_layer.set_text(self.load_gc())
+        scores = self.load_gc()
+        if len(scores) == 0:
+            scores = ['']
+        layer_script = []
+        for s in scores:
+            l = dmd.TextLayer(64, 24, font_named("04B-03-7px.dmd"), "center", opaque=False)
+            l.set_text(s)
+            layer_script.append({'seconds':2.5,
+                'layer':dmd.GroupedLayer(128, 32, [l, self.text3_layer,
+                    self.text2_layer, self.text1_layer])})
+        self.layer = dmd.ScriptedLayer(width=128, height=32, script=layer_script)
 
     def sw_startButton_active(self, sw):
         global loaderconfig
@@ -351,13 +364,19 @@ class Loader(game.Mode):
         self.cancel_delayed('gi_dim')
         self.game.lampctrl.stop_show()
         self.stop_proc()
+        
+        # remember current directory
+        cwd = os.getcwd()
 
-        os.chdir(path); 
+        os.chdir(path) 
 
         # Call an executable to take over from here, further execution of Python code is halted.
         print(cmd+" "+args)
         os.system(cmd+" "+args)
 
+        # return to original directory
+        os.chdir(cwd)
+        
         # Pinmame/PyProcGame executable was:
         # - Quit by a delete on the keyboard
         # - Interupted by flipper buttons + start button combo
